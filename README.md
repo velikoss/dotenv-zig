@@ -36,7 +36,7 @@ Also you can install it using Zon
 
    pub fn main() void {
       var allocator = std.heap.c_allocator;
-      var env: Env = try Env.init(&allocator, ".env");
+      var env: Env = try Env.init();
          
       const myEnvVar = try env.get("MY_ENV_VAR");
       const anotherVar = try env.get("ANOTHER_VAR");
