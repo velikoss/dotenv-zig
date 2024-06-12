@@ -21,7 +21,7 @@ Also you can install it using Zon
 
 ## Usage
 
-1. Create a `.env` file in your project directory:
+1. Create a `.env` file in your project or executable directory:
 
    ```sh
    # .env
