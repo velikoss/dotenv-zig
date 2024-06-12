@@ -46,6 +46,9 @@ Also you can install it using Zon
    }
    ```
 
+## More information
+Seeking for more info? Look at [Wiki](https://github.com/velikoss/dotenv-zig/wiki)
+
 ## Contributing
 
 Contributions are welcome! Fork the repository and submit a pull request.
