@@ -220,6 +220,7 @@ fn parseEnvFile(allocator: *Allocator, file_path: []const u8) !StringMap {
 
 const StringMap = std.StringHashMap([]const u8);
 
+
 pub const Env = struct {
     file_path: []const u8,
     allocator: *Allocator,
@@ -227,14 +228,16 @@ pub const Env = struct {
 
     pub fn init() !Env {
         var allocator = std.heap.page_allocator;
-	_ = &allocator;
-	var file_path = try cwd(&allocator, ".env");
-	_ = &file_path;
+	    _ = &allocator;
+	    var file_path = try cwd(&allocator, ".env");
+	    _ = &file_path;
+        var vars = try parseEnvFile(&allocator, file_path);
+        _ = &vars;
 
-        const env = try Env {
+        const env = Env {
             .file_path = file_path,
             .allocator = &allocator,
-            .vars = try parseEnvFile(&allocator, file_path),
+            .vars = vars,
         };
 
         return env;
