@@ -228,11 +228,13 @@ pub const Env = struct {
     pub fn init() !Env {
         var allocator = std.heap.page_allocator;
 	_ = &allocator;
+	var file_path = try cwd(&allocator, ".env");
+	_ = &file_path;
 
         const env = try Env {
-            .file_path = try cwd(&allocator, ".env"),
+            .file_path = file_path,
             .allocator = &allocator,
-            .vars = try parseEnvFile(&allocator),
+            .vars = try parseEnvFile(&allocator, file_path),
         };
 
         return env;
