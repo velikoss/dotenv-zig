@@ -7,4 +7,4 @@ docgen_tmp/
 .zig-cache/
 .env
 deps.zig
-
+.idea/
