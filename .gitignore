@@ -1,0 +1,10 @@
+zig-cache/
+zig-out/
+build/
+build-*/
+docgen_tmp/
+.zigmod/
+.zig-cache/
+.env
+deps.zig
+

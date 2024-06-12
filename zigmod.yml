@@ -1,0 +1,6 @@
+id: jujt1lasl1sd4xs8ly20f8vv3knj2qon41ckittx6w1qstgs
+name: dotenv-zig
+main: src/root.zig
+license: MIT
+description: .env for Zig
+dependencies:
