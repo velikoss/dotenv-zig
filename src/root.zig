@@ -226,7 +226,8 @@ pub const Env = struct {
     vars: StringMap,
 
     pub fn init() !Env {
-        const allocator = std.heap.page_allocator;
+        var allocator = std.heap.page_allocator;
+	_ = &allocator;
 
         const env = try Env {
             .file_path = try cwd(&allocator, ".env"),
