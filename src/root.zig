@@ -5,6 +5,10 @@ const debug = std.debug;
 const assert = debug.assert;
 const Allocator = mem.Allocator;
 
+comptime {
+	std.testing.refAllDecls(@This());
+}
+
 pub const string = struct {
     buffer: []u8,
     allocator: *Allocator,
