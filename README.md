@@ -21,7 +21,7 @@
 2. Use dotenv to read the environment variable:
 
    ```zig
-   const dotenv = @import("dotenv");
+   const Env = @import("dotenv");
    pub fn main() !void {
       const alloc = std.testing.allocator;
       // read the env file
