@@ -1,27 +1,20 @@
-# dotenv-zig
+# dotenv zig 0.14.0
 
-dotenv-zig is a Zig library for parsing and managing environment variables from a `.env` file. It provides a simple and efficient way to load environment variables into your Zig applications.
-
-## Features
-
-- Parse `.env` files and load environment variables into your application.
+- dotenv is a super simple single file zig library for parsing a `.env` file.
+- implementation is < 100 lines
 - Support for key-value pairs separated by `=` in the `.env` file.
-- Easily integrate with existing Zig projects.
-- **No dependencies needed.**
-
-## Installation
-
-Install dotenv-zig using [zigmod](https://github.com/nektro/zigmod/):
-
-   ```sh
-   zigmod aq add dotenv-zig
-   ```
-
-Also you can install it using Zon
+- trims trailing spaces in key and values
+- values in double or single quotes get stripped: "myvalue" -> myvalue
+- does not check keys for syntax correctness
+- dupes the key-values into a hashmap, so the input buffer may get deallocated without problems
+- No dependencies
 
 ## Usage
 
-1. Create a `.env` file in your project or executable directory:
+0. with zon: zig fetch --save "thisrepo/hash"
+   in build.zig, add the module (the name of the module is "dotenv")
+
+2. Create a `.env` file in your project or executable directory:
 
    ```sh
    # .env
@@ -29,25 +22,25 @@ Also you can install it using Zon
    ANOTHER_VAR=world
    ```
 
-2. Use dotenv-zig to load the environment variables in your Zig code:
+3. Use dotenv to read the environment variable:
 
    ```zig
-   const dotenv = @import("dotenv-zig");
-
-   pub fn main() void {
-      var allocator = std.heap.c_allocator;
-      var env: Env = try Env.init();
-         
-      const myEnvVar = try env.get("MY_ENV_VAR");
-      const anotherVar = try env.get("ANOTHER_VAR");
-   
+   const Env = @import("dotenv");
+   pub fn main() !void {
+      const alloc = std.testing.allocator;
+      // read the env file
+      var file = try std.fs.cwd().openFile(".env", .{});
+      defer file.close();
+      const content = try file.readToEndAlloc(alloc, 1024 * 1024);
+      defer alloc.free(content);
+      // parse the env file
+      var env: Env = try Env.init(alloc, content);
+      defer env.deinit();
+      std.debug.print("{s}\n", .{env.get("password").?});
       // Use the environment variables
       // ...
    }
    ```
-
-## More information
-Seeking for more info? Look at [Wiki](https://github.com/velikoss/dotenv-zig/wiki)
 
 ## Contributing
 
