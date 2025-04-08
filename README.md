@@ -6,7 +6,7 @@
 - trims trailing spaces in key and values
 - values in double or single quotes get stripped: "myvalue" -> myvalue
 - does not check keys for syntax correctness
-- dupes the values into a hashmap, so the input buffer can get deinitilized without problems
+- dupes the key-values into a hashmap, so the input buffer may get deallocated without problems
 - No dependencies
 
 ## Usage
