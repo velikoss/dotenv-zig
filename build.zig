@@ -4,12 +4,12 @@ pub fn build(b: *std.Build) !void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
-    _ = b.addModule("dotenv", .{
+    const dotenv_module = b.addModule("dotenv", .{
         .root_source_file = b.path("src/root.zig"),
     });
 
     const lib_test = b.addTest(.{
-        .root_source_file = b.path("src/root.zig"),
+        .root_module = dotenv_module,
         .target = target,
         .optimize = optimize,
     });
