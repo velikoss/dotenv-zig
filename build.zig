@@ -5,6 +5,8 @@ pub fn build(b: *std.Build) !void {
     const optimize = b.standardOptimizeOption(.{});
 
     const dotenv_module = b.addModule("dotenv", .{
+        .target = target,
+        .optimize = optimize,
         .root_source_file = b.path("src/root.zig"),
     });
 
