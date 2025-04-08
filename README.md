@@ -8,9 +8,9 @@
 ## Usage
 
 0. with zon: zig fetch --save "thisrepo/hash"
-   add in build.zig the name of the module is "dotenv"
+   in build.zig, add the module (the name of the module is "dotenv")
 
-1. Create a `.env` file in your project or executable directory:
+2. Create a `.env` file in your project or executable directory:
 
    ```sh
    # .env
@@ -18,7 +18,7 @@
    ANOTHER_VAR=world
    ```
 
-2. Use dotenv to read the environment variable:
+3. Use dotenv to read the environment variable:
 
    ```zig
    const dotenv = @import("dotenv");
