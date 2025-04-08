@@ -1,6 +1,7 @@
 # dotenv zig 0.14.0
 
-- dotenv is simple single file zig library for parsing a `.env` file.
+- dotenv is super simple single file zig library for parsing a `.env` file.
+- implementation is < 100 lines
 - Support for key-value pairs separated by `=` in the `.env` file.
 - No dependencies
 
