@@ -47,6 +47,24 @@ fn parse_env_file_content(alloc: Allocator, path_content: []const u8) !StringMap
     return env_map;
 }
 
+pub fn parse_key(key: []const u8, path_content: []const u8) !?[]const u8 {
+    var stream = std.io.fixedBufferStream(path_content);
+    var reader_stream = stream.reader();
+    const max_bytes_per_line = 1024 * 4;
+    var line_buffer: [max_bytes_per_line]u8 = undefined;
+    while (true) {
+        const readline = try reader_stream.readUntilDelimiterOrEof(&line_buffer, '\n');
+        if (readline) |line| {
+            if (try parse_line(line)) |res| {
+                if (std.mem.eql(u8, res.key, key)) {
+                    return res.val;
+                }
+            }
+        } else break;
+    }
+    return null;
+}
+
 const StringMap = std.StringHashMap([]const u8);
 pub const Env = @This();
 
@@ -71,9 +89,9 @@ pub fn get(self: *Env, key: []const u8) ?[]const u8 {
     return self.vars.get(key);
 }
 
-test "test\n" {
+test "test" {
     const alloc = std.testing.allocator;
-    var file = try std.fs.cwd().openFile(".env", .{});
+    var file = try std.fs.cwd().openFile("src/.env", .{});
     defer file.close();
     const content = try file.readToEndAlloc(alloc, 1024 * 1024);
     defer alloc.free(content);
@@ -84,5 +102,13 @@ test "test\n" {
     try expect(std.mem.eql(u8, env.get("number").?, "123"));
     try expect(std.mem.eql(u8, env.get("somekey").?, "somekey"));
     try expect(std.mem.eql(u8, env.get("keywith2spaces").?, "keywith2spaces  "));
-    std.debug.print("{s}\n", .{env.get("password").?});
+    // std.debug.print("{s}\n", .{env.get("password").?});
+}
+
+test "test comptime" {
+    // NOTE: use parse_key() if you need a key at comptime
+    const content = @embedFile(".env");
+    try expect(try Env.parse_key("no key", content) == null);
+    const password = try Env.parse_key("password", content);
+    try expect(std.mem.eql(u8, password.?, "mysecretpassword"));
 }
