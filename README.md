@@ -14,7 +14,7 @@
 0. with zon: zig fetch --save "thisrepo/hash"
    in build.zig, add the module (the name of the module is "dotenv")
 
-2. Create a `.env` file in your project or executable directory:
+1. Create a `.env` file in your project or executable directory:
 
    ```sh
    # .env
@@ -22,7 +22,7 @@
    ANOTHER_VAR=world
    ```
 
-3. Use dotenv to read the environment variable:
+2. Use dotenv to read the environment variable:
 
    ```zig
    const Env = @import("dotenv");
@@ -39,6 +39,18 @@
       std.debug.print("{s}\n", .{env.get("password").?});
       // Use the environment variables
       // ...
+   }
+   ```
+
+3. Use dotenv to get a key from a dotenv file at comptime:
+
+   ```zig
+   const Env = @import("dotenv");
+   pub fn main() !void {
+      const content = @embedFile(".env");
+      try expect(try Env.parse_key("no key", content) == null);
+      const password = try Env.parse_key("password", content);
+      try expect(std.mem.eql(u8, password.?, "mysecretpassword"));
    }
    ```
 
