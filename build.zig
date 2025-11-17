@@ -12,8 +12,8 @@ pub fn build(b: *std.Build) !void {
 
     const lib_test = b.addTest(.{
         .root_module = dotenv_module,
-        .target = target,
-        .optimize = optimize,
+        // .target = target,
+        // .optimize = optimize,
     });
 
     const run_test = b.addRunArtifact(lib_test);
