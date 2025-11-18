@@ -152,7 +152,7 @@ test "test comptime" {
 
 test "test init_with_path" {
     const alloc = std.testing.allocator;
-    var env: Env = try Env.init_with_path(alloc, "src/.env", 1024 * 1024, true);
+    var env: Env = try Env.initWithPath(alloc, "src/.env", 1024 * 1024, true);
     defer env.deinit();
     try expect(env.get("no key") == null);
     try expect(std.mem.eql(u8, env.get("password").?, "mysecretpassword"));
