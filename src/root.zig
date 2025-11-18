@@ -86,7 +86,7 @@ pub fn init(alloc: Allocator, file_content: ?[]const u8) !Env {
     return env;
 }
 
-pub fn init_with_path(alloc: Allocator, path: []const u8, max_bytes: usize, use_process_env: bool) !Env {
+pub fn initWithPath(alloc: Allocator, path: []const u8, max_bytes: usize, use_process_env: bool) !Env {
     var file = std.fs.cwd().openFile(path, .{}) catch |err| {
         if (use_process_env and err == error.FileNotFound) {
             return try init(alloc, null);
@@ -116,6 +116,13 @@ pub fn get(self: *Env, key: []const u8) ?[]const u8 {
     const proc_val = std.posix.getenv(key) orelse return null;
 
     return proc_val;
+}
+
+pub fn getRequired(self: *Env, key: []const u8) ![]const u8 {
+    const val = self.get(key) orelse {
+        return error.MissingRequiredEnvVar;
+    };
+    return val;
 }
 
 test "test" {

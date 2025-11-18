@@ -8,6 +8,7 @@
 - does not check keys for syntax correctness
 - dupes the key-values into a hashmap, so the input buffer may get deallocated without problems
 - **Process environment variable support** - automatically falls back to process environment when key is not found in .env file
+- **Required environment variable validation** - `getRequired()` function ensures critical variables are present
 - No dependencies
 
 ## Usage
@@ -44,15 +45,15 @@
    }
    ```
 
-   Alternatively, use `init_with_path` for a more convenient approach:
+   Alternatively, use `initWithPath` for a more convenient approach:
 
    ```zig
    const Env = @import("dotenv");
    pub fn main() !void {
       const alloc = std.heap.page_allocator;
-      // init_with_path handles file opening, reading, and cleanup automatically
+      // initWithPath handles file opening, reading, and cleanup automatically
       // Set use_process_env=true to fall back to process environment if .env file is not found
-      var env: Env = try Env.init_with_path(alloc, ".env", 1024 * 1024, true);
+      var env: Env = try Env.initWithPath(alloc, ".env", 1024 * 1024, true);
       defer env.deinit();
       // This will first check the .env file, then fall back to process environment if not found
       std.debug.print("{s}\n", .{env.get("password").?});
@@ -94,7 +95,7 @@
    }
    ```
 
-   **Option B: Use `init_with_path` with fallback** (recommended for cloud deployments):
+   **Option B: Use `initWithPath` with fallback** (recommended for cloud deployments):
 
    ```zig
    const Env = @import("dotenv");
@@ -102,7 +103,7 @@
       const alloc = std.heap.page_allocator;
       // If .env file exists, use it; otherwise fall back to process environment
       // This works seamlessly in both local development and cloud deployments
-      var env: Env = try Env.init_with_path(alloc, ".env", 1024 * 1024, true);
+      var env: Env = try Env.initWithPath(alloc, ".env", 1024 * 1024, true);
       defer env.deinit();
 
       // This will check .env file first, then process environment
@@ -119,6 +120,32 @@
    - CI/CD pipelines
    - Production environments where .env files should not be included
    - Local development where you want .env file support with cloud deployment compatibility
+
+5. Required environment variables with `getRequired()`:
+
+   For cases where an environment variable is mandatory, use `getRequired()` which returns an error if the variable is missing:
+
+   ```zig
+   const Env = @import("dotenv");
+   pub fn main() !void {
+      const alloc = std.heap.page_allocator;
+      var env: Env = try Env.initWithPath(alloc, ".env", 1024 * 1024, true);
+      defer env.deinit();
+
+      // getRequired() returns error.MissingRequiredEnvVar if the key is not found
+      const database_url = try env.getRequired("DATABASE_URL");
+      const api_key = try env.getRequired("API_KEY");
+
+      std.debug.print("Database URL: {s}\n", .{database_url});
+      std.debug.print("API Key: {s}\n", .{api_key});
+   }
+   ```
+
+   This is useful for:
+
+   - Ensuring critical configuration is present before application startup
+   - Providing clear error messages when required variables are missing
+   - Avoiding null checks when you know a variable must exist
 
 ## Docker Testing
 
