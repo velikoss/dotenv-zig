@@ -71,9 +71,14 @@ pub const Env = @This();
 vars: StringMap,
 arena: std.heap.ArenaAllocator,
 
-pub fn init(alloc: Allocator, file_content: []const u8) !Env {
+pub fn init(alloc: Allocator, file_content: ?[]const u8) !Env {
     var arena = std.heap.ArenaAllocator.init(alloc);
-    const vars = try parse_env_file_content(arena.allocator(), file_content);
+    var vars: StringMap = undefined;
+    if (file_content) |content| {
+        vars = try parse_env_file_content(arena.allocator(), content);
+    } else {
+        vars = StringMap.init(arena.allocator());
+    }
     const env = Env{
         .vars = vars,
         .arena = arena,
@@ -81,12 +86,36 @@ pub fn init(alloc: Allocator, file_content: []const u8) !Env {
     return env;
 }
 
+pub fn init_with_path(alloc: Allocator, path: []const u8, max_bytes: usize, use_process_env: bool) !Env {
+    var file = std.fs.cwd().openFile(path, .{}) catch |err| {
+        if (use_process_env and err == error.FileNotFound) {
+            return try init(alloc, null);
+        }
+        return err;
+    };
+    defer file.close();
+
+    const content = try file.readToEndAlloc(alloc, max_bytes);
+
+    defer alloc.free(content);
+
+    return try init(alloc, content);
+}
+
 pub fn deinit(env: *Env) void {
     env.arena.deinit();
 }
 
 pub fn get(self: *Env, key: []const u8) ?[]const u8 {
-    return self.vars.get(key);
+    // Check if already cached
+    if (self.vars.get(key)) |v| {
+        return v;
+    }
+
+    // Get from process environment
+    const proc_val = std.posix.getenv(key) orelse return null;
+
+    return proc_val;
 }
 
 test "test" {
@@ -111,4 +140,29 @@ test "test comptime" {
     try expect(try Env.parse_key("no key", content) == null);
     const password = try Env.parse_key("password", content);
     try expect(std.mem.eql(u8, password.?, "mysecretpassword"));
+}
+
+test "test init_with_path" {
+    const alloc = std.testing.allocator;
+    var env: Env = try Env.init_with_path(alloc, "src/.env", 1024 * 1024, true);
+    defer env.deinit();
+    try expect(env.get("no key") == null);
+    try expect(std.mem.eql(u8, env.get("password").?, "mysecretpassword"));
+    try expect(std.mem.eql(u8, env.get("number").?, "123"));
+    try expect(std.mem.eql(u8, env.get("somekey").?, "somekey"));
+    try expect(std.mem.eql(u8, env.get("keywith2spaces").?, "keywith2spaces  "));
+    // std.debug.print("{s}\n", .{env.get("password").?});
+}
+
+test "test process env" {
+    const alloc = std.testing.allocator;
+
+    var env: Env = try Env.init(alloc, null);
+    defer env.deinit();
+    try expect(env.get("no key") == null);
+    try expect(std.mem.eql(u8, env.get("password").?, "mysecretpassword"));
+    try expect(std.mem.eql(u8, env.get("number").?, "123"));
+    try expect(std.mem.eql(u8, env.get("somekey").?, "somekey-"));
+    try expect(std.mem.eql(u8, env.get("keywith2spaces").?, "keywith2spaces  "));
+    // std.debug.print("{s}\n", .{env.get("password").?});
 }
