@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - password=mysecretpassword
+      - number=123
+      - somekey=somekey-
+      # Note: Trailing spaces in keywith2spaces need to be preserved
+      # Using quotes to preserve trailing spaces
+      - 'keywith2spaces=keywith2spaces  '
+    # Override CMD to run specific test if needed
+    # command: zig build test --test-filter "test process env"
+

@@ -131,7 +131,7 @@ test "test" {
     try expect(std.mem.eql(u8, env.get("number").?, "123"));
     try expect(std.mem.eql(u8, env.get("somekey").?, "somekey"));
     try expect(std.mem.eql(u8, env.get("keywith2spaces").?, "keywith2spaces  "));
-    // std.debug.print("{s}\n", .{env.get("password").?});
+    std.debug.print("done with test\n", .{});
 }
 
 test "test comptime" {
@@ -140,6 +140,7 @@ test "test comptime" {
     try expect(try Env.parse_key("no key", content) == null);
     const password = try Env.parse_key("password", content);
     try expect(std.mem.eql(u8, password.?, "mysecretpassword"));
+    std.debug.print("done with comptime test\n", .{});
 }
 
 test "test init_with_path" {
@@ -151,7 +152,7 @@ test "test init_with_path" {
     try expect(std.mem.eql(u8, env.get("number").?, "123"));
     try expect(std.mem.eql(u8, env.get("somekey").?, "somekey"));
     try expect(std.mem.eql(u8, env.get("keywith2spaces").?, "keywith2spaces  "));
-    // std.debug.print("{s}\n", .{env.get("password").?});
+    std.debug.print("done with init_with_path test\n", .{});
 }
 
 test "test process env" {
@@ -164,5 +165,5 @@ test "test process env" {
     try expect(std.mem.eql(u8, env.get("number").?, "123"));
     try expect(std.mem.eql(u8, env.get("somekey").?, "somekey-"));
     try expect(std.mem.eql(u8, env.get("keywith2spaces").?, "keywith2spaces  "));
-    // std.debug.print("{s}\n", .{env.get("password").?});
+    std.debug.print("done with process env test\n", .{});
 }
