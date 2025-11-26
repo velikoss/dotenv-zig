@@ -71,9 +71,14 @@ pub const Env = @This();
 vars: StringMap,
 arena: std.heap.ArenaAllocator,
 
-pub fn init(alloc: Allocator, file_content: []const u8) !Env {
+pub fn init(alloc: Allocator, file_content: ?[]const u8) !Env {
     var arena = std.heap.ArenaAllocator.init(alloc);
-    const vars = try parse_env_file_content(arena.allocator(), file_content);
+    var vars: StringMap = undefined;
+    if (file_content) |content| {
+        vars = try parse_env_file_content(arena.allocator(), content);
+    } else {
+        vars = StringMap.init(arena.allocator());
+    }
     const env = Env{
         .vars = vars,
         .arena = arena,
@@ -81,12 +86,175 @@ pub fn init(alloc: Allocator, file_content: []const u8) !Env {
     return env;
 }
 
+pub fn initWithPath(alloc: Allocator, path: []const u8, max_bytes: usize, use_process_env: bool) !Env {
+    var file = std.fs.cwd().openFile(path, .{}) catch |err| {
+        if (use_process_env and err == error.FileNotFound) {
+            return try init(alloc, null);
+        }
+        return err;
+    };
+    defer file.close();
+
+    const content = try file.readToEndAlloc(alloc, max_bytes);
+
+    defer alloc.free(content);
+
+    return try init(alloc, content);
+}
+
 pub fn deinit(env: *Env) void {
     env.arena.deinit();
 }
 
 pub fn get(self: *Env, key: []const u8) ?[]const u8 {
-    return self.vars.get(key);
+    // Check if already cached
+    if (self.vars.get(key)) |v| {
+        return v;
+    }
+
+    // Get from process environment
+    const proc_val = std.posix.getenv(key) orelse return null;
+
+    return proc_val;
+}
+
+pub fn getRequired(self: *Env, key: []const u8) ![]const u8 {
+    const val = self.get(key) orelse {
+        return error.MissingRequiredEnvVar;
+    };
+    return val;
+}
+
+pub fn getWithDefault(self: *Env, key: []const u8, default: []const u8) []const u8 {
+    const val = self.get(key) orelse {
+        return default;
+    };
+    return val;
+}
+
+pub fn parseU16(self: *Env, key: []const u8) !u16 {
+    const val = self.get(key) orelse {
+        return error.MissingRequiredEnvVar;
+    };
+    return std.fmt.parseInt(u16, val, 10) catch {
+        return error.InvalidEnvVar;
+    };
+}
+
+pub fn parseU16WithDefault(self: *Env, key: []const u8, default: u16) u16 {
+    const val = self.get(key) orelse {
+        return default;
+    };
+    return std.fmt.parseInt(u16, val, 10) catch {
+        return default;
+    };
+}
+
+pub fn parseU32(self: *Env, key: []const u8) !u32 {
+    const val = self.get(key) orelse {
+        return error.MissingRequiredEnvVar;
+    };
+    return std.fmt.parseInt(u32, val, 10) catch {
+        return error.InvalidEnvVar;
+    };
+}
+
+pub fn parseU32WithDefault(self: *Env, key: []const u8, default: u32) u32 {
+    const val = self.get(key) orelse {
+        return default;
+    };
+    return std.fmt.parseInt(u32, val, 10) catch {
+        return default;
+    };
+}
+
+pub fn parseU64(self: *Env, key: []const u8) !u64 {
+    const val = self.get(key) orelse {
+        return error.MissingRequiredEnvVar;
+    };
+    return std.fmt.parseInt(u64, val, 10) catch {
+        return error.InvalidEnvVar;
+    };
+}
+
+pub fn parseU64WithDefault(self: *Env, key: []const u8, default: u64) u64 {
+    const val = self.get(key) orelse {
+        return default;
+    };
+    return std.fmt.parseInt(u64, val, 10) catch {
+        return default;
+    };
+}
+
+pub fn parseUsize(self: *Env, key: []const u8) !usize {
+    const val = self.get(key) orelse {
+        return error.MissingRequiredEnvVar;
+    };
+    return std.fmt.parseInt(usize, val, 10) catch {
+        return error.InvalidEnvVar;
+    };
+}
+
+pub fn parseUsizeWithDefault(self: *Env, key: []const u8, default: usize) usize {
+    const val = self.get(key) orelse {
+        return default;
+    };
+    return std.fmt.parseInt(usize, val, 10) catch {
+        return default;
+    };
+}
+
+pub fn parseBool(self: *Env, key: []const u8) !bool {
+    const val = self.get(key) orelse {
+        return error.MissingRequiredEnvVar;
+    };
+    return std.fmt.parseBool(val) catch {
+        return error.InvalidEnvVar;
+    };
+}
+pub fn parseBoolWithDefault(self: *Env, key: []const u8, default: bool) bool {
+    const val = self.get(key) orelse {
+        return default;
+    };
+    return std.fmt.parseBool(val) catch {
+        return default;
+    };
+}
+
+pub fn parseFloat(self: *Env, key: []const u8) !f32 {
+    const val = self.get(key) orelse {
+        return error.MissingRequiredEnvVar;
+    };
+    return std.fmt.parseFloat(f32, val) catch {
+        return error.InvalidEnvVar;
+    };
+}
+
+pub fn parseFloatWithDefault(self: *Env, key: []const u8, default: f32) f32 {
+    const val = self.get(key) orelse {
+        return default;
+    };
+    return std.fmt.parseFloat(f32, val) catch {
+        return default;
+    };
+}
+
+pub fn parseDouble(self: *Env, key: []const u8) !f64 {
+    const val = self.get(key) orelse {
+        return error.MissingRequiredEnvVar;
+    };
+    return std.fmt.parseFloat(f64, val) catch {
+        return error.InvalidEnvVar;
+    };
+}
+
+pub fn parseDoubleWithDefault(self: *Env, key: []const u8, default: f64) f64 {
+    const val = self.get(key) orelse {
+        return default;
+    };
+    return std.fmt.parseFloat(f64, val) catch {
+        return default;
+    };
 }
 
 test "test" {
@@ -102,7 +270,7 @@ test "test" {
     try expect(std.mem.eql(u8, env.get("number").?, "123"));
     try expect(std.mem.eql(u8, env.get("somekey").?, "somekey"));
     try expect(std.mem.eql(u8, env.get("keywith2spaces").?, "keywith2spaces  "));
-    // std.debug.print("{s}\n", .{env.get("password").?});
+    std.debug.print("done with test\n", .{});
 }
 
 test "test comptime" {
@@ -111,4 +279,51 @@ test "test comptime" {
     try expect(try Env.parse_key("no key", content) == null);
     const password = try Env.parse_key("password", content);
     try expect(std.mem.eql(u8, password.?, "mysecretpassword"));
+    std.debug.print("done with comptime test\n", .{});
+}
+
+test "test init_with_path" {
+    const alloc = std.testing.allocator;
+    var env: Env = try Env.initWithPath(alloc, "src/.env", 1024 * 1024, true);
+    defer env.deinit();
+    try expect(env.get("no key") == null);
+    try expect(std.mem.eql(u8, env.get("password").?, "mysecretpassword"));
+    try expect(std.mem.eql(u8, env.get("number").?, "123"));
+    try expect(std.mem.eql(u8, env.get("somekey").?, "somekey"));
+    try expect(std.mem.eql(u8, env.get("keywith2spaces").?, "keywith2spaces  "));
+    std.debug.print("done with init_with_path test\n", .{});
+}
+
+test "test process env" {
+    const alloc = std.testing.allocator;
+
+    var env: Env = try Env.init(alloc, null);
+    defer env.deinit();
+    try expect(env.get("no key") == null);
+    try expect(std.mem.eql(u8, env.get("password").?, "mysecretpassword"));
+    try expect(std.mem.eql(u8, env.get("number").?, "123"));
+    try expect(std.mem.eql(u8, env.get("somekey").?, "somekey-"));
+    try expect(std.mem.eql(u8, env.get("keywith2spaces").?, "keywith2spaces  "));
+    std.debug.print("done with process env test\n", .{});
+}
+
+test "test parseU16, U32, U64, Usize, Bool, Float, Double" {
+    const alloc = std.testing.allocator;
+    var env: Env = try Env.initWithPath(alloc, "src/.env", 1024 * 1024, true);
+    defer env.deinit();
+    try expect(env.parseU16("u16") == 123);
+    try expect(env.parseU16WithDefault("u16", 456) == 123);
+    try expect(env.parseU32("u32") == 123);
+    try expect(env.parseU32WithDefault("u32", 456) == 123);
+    try expect(env.parseU64("u64") == 123);
+    try expect(env.parseU64WithDefault("u64", 456) == 123);
+    try expect(env.parseUsize("usize") == 123);
+    try expect(env.parseUsizeWithDefault("usize", 456) == 123);
+    try expect(env.parseBool("bool") == true);
+    try expect(env.parseBoolWithDefault("bool", false) == true);
+    try expect(env.parseFloat("float") == 123.0);
+    try expect(env.parseFloatWithDefault("float", 456.0) == 123.0);
+    try expect(env.parseDouble("double") == 123.0);
+    try expect(env.parseDoubleWithDefault("double", 456.0) == 123.0);
+    std.debug.print("done with parseU16, U32, U64, Usize, Bool, Float, Double test\n", .{});
 }
