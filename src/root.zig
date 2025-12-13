@@ -208,17 +208,26 @@ pub fn parseBool(self: *Env, key: []const u8) !bool {
     const val = self.get(key) orelse {
         return error.MissingRequiredEnvVar;
     };
-    return std.fmt.parseBool(val) catch {
+    // Accept common bool env var values: "true"/"1", "false"/"0" (case-insensitive)
+    if (std.ascii.eqlIgnoreCase(val, "true") or std.ascii.eqlIgnoreCase(val, "1")) {
+        return true;
+    } else if (std.ascii.eqlIgnoreCase(val, "false") or std.ascii.eqlIgnoreCase(val, "0")) {
+        return false;
+    } else {
         return error.InvalidEnvVar;
-    };
+    }
 }
 pub fn parseBoolWithDefault(self: *Env, key: []const u8, default: bool) bool {
     const val = self.get(key) orelse {
         return default;
     };
-    return std.fmt.parseBool(val) catch {
+    if (std.ascii.eqlIgnoreCase(val, "true") or std.ascii.eqlIgnoreCase(val, "1")) {
+        return true;
+    } else if (std.ascii.eqlIgnoreCase(val, "false") or std.ascii.eqlIgnoreCase(val, "0")) {
+        return false;
+    } else {
         return default;
-    };
+    }
 }
 
 pub fn parseFloat(self: *Env, key: []const u8) !f32 {
