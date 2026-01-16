@@ -115,8 +115,20 @@ pub fn get(self: *Env, key: []const u8) ?[]const u8 {
     // Get from process environment
     const proc_val = std.process.getEnvVarOwned(self.arena.allocator(), key) catch |err| switch (err) {
         error.EnvironmentVariableNotFound => return null,
-        else => return null,
+        else => {
+            std.log.err("failed to read env var {s}: {s}", .{ key, @errorName(err) });
+            return null;
+        },
     };
+
+    // Cache for future lookups using the arena allocator
+    if (self.arena.allocator().dupe(u8, key)) |dup_key| {
+        if (self.vars.put(dup_key, proc_val)) |_| {} else |put_err| {
+            std.log.err("failed to cache env var {s}: {s}", .{ key, @errorName(put_err) });
+        }
+    } else |alloc_err| {
+        std.log.err("failed to cache env key {s}: {s}", .{ key, @errorName(alloc_err) });
+    }
 
     return proc_val;
 }
