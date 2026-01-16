@@ -125,6 +125,7 @@ pub fn get(self: *Env, key: []const u8) ?[]const u8 {
     if (self.arena.allocator().dupe(u8, key)) |dup_key| {
         _ = self.vars.put(dup_key, proc_val) catch |put_err| {
             std.log.err("failed to cache env var {s}: {s}", .{ key, @errorName(put_err) });
+            self.arena.allocator().free(dup_key);
         };
     } else |alloc_err| {
         std.log.err("failed to cache env key {s}: {s}", .{ key, @errorName(alloc_err) });
