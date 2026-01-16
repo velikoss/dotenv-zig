@@ -113,7 +113,10 @@ pub fn get(self: *Env, key: []const u8) ?[]const u8 {
     }
 
     // Get from process environment
-    const proc_val = std.posix.getenv(key) orelse return null;
+    const proc_val = std.process.getEnvVarOwned(self.arena.allocator(), key) catch |err| switch (err) {
+        error.EnvironmentVariableNotFound => return null,
+        else => return null,
+    };
 
     return proc_val;
 }
