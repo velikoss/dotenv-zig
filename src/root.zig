@@ -113,7 +113,22 @@ pub fn get(self: *Env, key: []const u8) ?[]const u8 {
     }
 
     // Get from process environment
-    const proc_val = std.posix.getenv(key) orelse return null;
+    const proc_val = std.process.getEnvVarOwned(self.arena.allocator(), key) catch |err| switch (err) {
+        error.EnvironmentVariableNotFound => return null,
+        else => {
+            std.log.err("failed to read env var {s}: {s}", .{ key, @errorName(err) });
+            return null;
+        },
+    };
+
+    // Cache for future lookups using the arena allocator
+    if (self.arena.allocator().dupe(u8, key)) |dup_key| {
+        self.vars.put(dup_key, proc_val) catch |put_err| {
+            std.log.err("failed to cache env var {s}: {s}", .{ key, @errorName(put_err) });
+        };
+    } else |alloc_err| {
+        std.log.err("failed to cache env key {s}: {s}", .{ key, @errorName(alloc_err) });
+    }
 
     return proc_val;
 }
@@ -208,17 +223,26 @@ pub fn parseBool(self: *Env, key: []const u8) !bool {
     const val = self.get(key) orelse {
         return error.MissingRequiredEnvVar;
     };
-    return std.fmt.parseBool(val) catch {
+    // Accept common bool env var values: "true"/"1", "false"/"0" (case-insensitive)
+    if (std.ascii.eqlIgnoreCase(val, "true") or std.ascii.eqlIgnoreCase(val, "1")) {
+        return true;
+    } else if (std.ascii.eqlIgnoreCase(val, "false") or std.ascii.eqlIgnoreCase(val, "0")) {
+        return false;
+    } else {
         return error.InvalidEnvVar;
-    };
+    }
 }
 pub fn parseBoolWithDefault(self: *Env, key: []const u8, default: bool) bool {
     const val = self.get(key) orelse {
         return default;
     };
-    return std.fmt.parseBool(val) catch {
+    if (std.ascii.eqlIgnoreCase(val, "true") or std.ascii.eqlIgnoreCase(val, "1")) {
+        return true;
+    } else if (std.ascii.eqlIgnoreCase(val, "false") or std.ascii.eqlIgnoreCase(val, "0")) {
+        return false;
+    } else {
         return default;
-    };
+    }
 }
 
 pub fn parseFloat(self: *Env, key: []const u8) !f32 {
